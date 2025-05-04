@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chennai Grocery List Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #d35400;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #d35400;
+            border-bottom: 2px solid #d35400;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        .category-section {
+            margin-bottom: 30px;
+        }
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .item-card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .item-card:hover {
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+        .item-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .quantity-btn {
+            width: 30px;
+            height: 30px;
+            background-color: #d35400;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .quantity-btn:hover {
+            background-color: #e67e22;
+        }
+        .quantity-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .quantity-display {
+            font-weight: bold;
+            width: 40px;
+            text-align: center;
+        }
+        .unit-select {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        .added {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .custom-item-section {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #fff3cd;
+            border-radius: 8px;
+            border: 1px solid #ffeeba;
+        }
+        .custom-item-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .custom-item-form input,
+        .custom-item-form select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .custom-item-form button {
+            padding: 8px 15px;
+            background-color: #d35400;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .custom-item-form button:hover {
+            background-color: #e67e22;
+        }
+        .grocery-list {
+            margin-top: 40px;
+            border-top: 2px dashed #d35400;
+            padding-top: 20px;
+        }
+        .grocery-list h2 {
+            color: #d35400;
+            margin-bottom: 15px;
+            border-bottom: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+        .custom-item-row {
+            background-color: #ffeaa7;
+        }
+        .pdf-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .action-button {
+            padding: 12px 25px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #exportButton {
+            background-color: #27ae60;
+            color: white;
+        }
+        #exportButton:hover {
+            background-color: #2ecc71;
+        }
+        #clearButton {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        #clearButton:hover {
+            background-color: #95a5a6;
+        }
+        .category-header {
+            background-color: #f39c12;
+            color: white;
+            font-weight: bold;
+            padding: 5px 10px;
+        }
+        #searchBox {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .search-container {
+            position: relative;
+        }
+        .search-container i {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            color: #7f8c8d;
+        }
+        .filter-options {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .filter-button {
+            padding: 8px 15px;
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .filter-button.active {
+            background-color: #d35400;
+            color: white;
+            border-color: #d35400;
+        }
+        .hidden {
+            display: none;
+        }
+        @media print {
+            .search-container, .filter-options, .custom-item-section, .action-buttons, .quantity-control {
+                display: none;
+            }
+            .container {
+                box-shadow: none;
+                padding: 0;
+            }
+            body {
+                padding: 0;
+                background-color: white;
+            }
+        }
+        @media (max-width: 768px) {
+            .items-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            .item-card {
+                padding: 10px;
+            }
+            .custom-item-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Chennai Grocery List Generator</h1>
+        
+        <div class="search-container">
+            <input type="text" id="searchBox" placeholder="Search for items...">
+        </div>
+        
+        <div class="filter-options">
+            <span class="filter-button active" data-category="all">All Items</span>
+            <span class="filter-button" data-category="rice-grains">Rice & Grains</span>
+            <span class="filter-button" data-category="spices-masalas">Spices & Masalas</span>
+            <span class="filter-button" data-category="oils-ghee">Oils & Ghee</span>
+            <span class="filter-button" data-category="vegetables">Vegetables</span>
+            <span class="filter-button" data-category="dairy-others">Dairy & Others</span>
+            <span class="filter-button" data-category="selected">Selected Items</span>
+        </div>
+        
+        <div class="grocery-items-container">
+            <!-- Rice & Grains -->
+            <div class="category-section" id="rice-grains">
+                <h2>Rice & Grains</h2>
+                <div class="items-grid">
+                    <div class="item-card" data-item="Rice - Ponni">
+                        <div class="item-name">Rice - Ponni</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Rice - Sona Masoori">
+                        <div class="item-name">Rice - Sona Masoori</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Rice - Basmati">
+                        <div class="item-name">Rice - Basmati</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Toor Dal (Arhar)">
+                        <div class="item-name">Toor Dal (Arhar)</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Moong Dal">
+                        <div class="item-name">Moong Dal</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Urad Dal">
+                        <div class="item-name">Urad Dal</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Chana Dal">
+                        <div class="item-name">Chana Dal</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Masoor Dal">
+                        <div class="item-name">Masoor Dal</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Rava/Sooji">
+                        <div class="item-name">Rava/Sooji</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Wheat Flour (Atta)">
+                        <div class="item-name">Wheat Flour (Atta)</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Spices & Masalas -->
+            <div class="category-section" id="spices-masalas">
+                <h2>Spices & Masalas</h2>
+                <div class="items-grid">
+                    <div class="item-card" data-item="Turmeric Powder">
+                        <div class="item-name">Turmeric Powder</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Red Chilli Powder">
+                        <div class="item-name">Red Chilli Powder</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Coriander Powder">
+                        <div class="item-name">Coriander Powder</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Cumin Powder">
+                        <div class="item-name">Cumin Powder</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Garam Masala">
+                        <div class="item-name">Garam Masala</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Mustard Seeds">
+                        <div class="item-name">Mustard Seeds</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Cumin Seeds">
+                        <div class="item-name">Cumin Seeds</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Fenugreek Seeds">
+                        <div class="item-name">Fenugreek Seeds</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Asafoetida (Hing)">
+                        <div class="item-name">Asafoetida (Hing)</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Cardamom">
+                        <div class="item-name">Cardamom</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Cloves">
+                        <div class="item-name">Cloves</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Cinnamon">
+                        <div class="item-name">Cinnamon</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Bay Leaves">
+                        <div class="item-name">Bay Leaves</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Oils & Ghee -->
+            <div class="category-section" id="oils-ghee">
+                <h2>Oils & Ghee</h2>
+                <div class="items-grid">
+                    <div class="item-card" data-item="Sunflower Oil">
+                        <div class="item-name">Sunflower Oil</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="litre">litre</option>
+                                <option value="ml">ml</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Coconut Oil">
+                        <div class="item-name">Coconut Oil</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="litre">litre</option>
+                                <option value="ml">ml</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Sesame Oil (Gingelly)">
+                        <div class="item-name">Sesame Oil (Gingelly)</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="litre">litre</option>
+                                <option value="ml">ml</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Ghee">
+                        <div class="item-name">Ghee</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Mustard Oil">
+                        <div class="item-name">Mustard Oil</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="litre">litre</option>
+                                <option value="ml">ml</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Vegetables -->
+            <div class="category-section" id="vegetables">
+                <h2>Vegetables</h2>
+                <div class="items-grid">
+                    <div class="item-card" data-item="Onion">
+                        <div class="item-name">Onion</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Tomato">
+                        <div class="item-name">Tomato</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Potato">
+                        <div class="item-name">Potato</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Brinjal">
+                        <div class="item-name">Brinjal</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Lady's Finger (Okra)">
+                        <div class="item-name">Lady's Finger (Okra)</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Carrot">
+                        <div class="item-name">Carrot</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Beans">
+                        <div class="item-name">Beans</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Cabbage">
+                        <div class="item-name">Cabbage</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Cauliflower">
+                        <div class="item-name">Cauliflower</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Ginger">
+                        <div class="item-name">Ginger</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Garlic">
+                        <div class="item-name">Garlic</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Green Chillies">
+                        <div class="item-name">Green Chillies</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Curry Leaves">
+                        <div class="item-name">Curry Leaves</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="bunch">bunch</option>
+                                <option value="g">g</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Coriander Leaves">
+                        <div class="item-name">Coriander Leaves</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="bunch">bunch</option>
+                                <option value="g">g</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Drumstick">
+                        <div class="item-name">Drumstick</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Coconut">
+                        <div class="item-name">Coconut</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="pcs">pcs</option>
+                                <option value="g">g</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dairy & Others -->
+            <div class="category-section" id="dairy-others">
+                <h2>Dairy & Others</h2>
+                <div class="items-grid">
+                    <div class="item-card" data-item="Milk">
+                        <div class="item-name">Milk</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="litre">litre</option>
+                                <option value="ml">ml</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Curd">
+                        <div class="item-name">Curd</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Paneer">
+                        <div class="item-name">Paneer</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Butter">
+                        <div class="item-name">Butter</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Cheese">
+                        <div class="item-name">Cheese</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Eggs">
+                        <div class="item-name">Eggs</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="dozen">dozen</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Sugar">
+                        <div class="item-name">Sugar</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Jaggery">
+                        <div class="item-name">Jaggery</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Salt">
+                        <div class="item-name">Salt</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Tea Powder">
+                        <div class="item-name">Tea Powder</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Coffee Powder">
+                        <div class="item-name">Coffee Powder</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Biscuits">
+                        <div class="item-name">Biscuits</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="packet">packet</option>
+                                <option value="pcs">pcs</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Soap">
+                        <div class="item-name">Soap</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="pcs">pcs</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="item-card" data-item="Detergent Powder">
+                        <div class="item-name">Detergent Powder</div>
+                        <div class="quantity-control">
+                            <button class="quantity-btn decrement" disabled>-</button>
+                            <span class="quantity-display">0</span>
+                            <button class="quantity-btn increment">+</button>
+                            <select class="unit-select">
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="packet">packet</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Custom Item Section -->
+        <div class="custom-item-section">
+            <h2>Add Custom Items</h2>
+            <div class="custom-item-form">
+                <div>
+                    <label for="customItemName">Item Name</label>
+                    <input type="text" id="customItemName" placeholder="Enter item name">
+                </div>
+                <div>
+                    <label for="customItemQuantity">Quantity</label>
+                    <input type="number" id="customItemQuantity" placeholder="Qty" min="1" value="1">
+                </div>
+                <div>
+                    <label for="customItemUnit">Unit</label>
+                    <select id="customItemUnit">
+                        <option value="kg">kg</option>
+                        <option value="g">g</option>
+                        <option value="litre">litre</option>
+                        <option value="ml">ml</option>
+                        <option value="pcs">pcs</option>
+                        <option value="packet">packet</option>
+                        <option value="dozen">dozen</option>
+                        <option value="bunch">bunch</option>
+                    </select>
+                </div>
+                <button id="addCustomItem">Add Item</button>
+            </div>
+        </div>
+        
+        <!-- Grocery List Section -->
+        <div class="grocery-list">
+            <h2>Your Grocery List</h2>
+            <div id="groceryListTable">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No.</th>
+                            <th>Item Name</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="groceryListItems">
+                        <!-- Items will be added here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pdf-section">
+                <div class="action-buttons">
+                    <button id="exportButton" class="action-button">Generate PDF</button>
+                    <button id="clearButton" class="action-button">Clear List</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize jsPDF
+            const { jsPDF } = window.jspdf;
+            
+            // DOM Elements
+            const searchBox = document.getElementById('searchBox');
+            const filterButtons = document.querySelectorAll('.filter-button');
+            const itemCards = document.querySelectorAll('.item-card');
+            const incrementButtons = document.querySelectorAll('.increment');
+            const decrementButtons = document.querySelectorAll('.decrement');
+            const quantityDisplays = document.querySelectorAll('.quantity-display');
+            const unitSelects = document.querySelectorAll('.unit-select');
+            const groceryListItems = document.getElementById('groceryListItems');
+            const addCustomItemBtn = document.getElementById('addCustomItem');
+            const exportButton = document.getElementById('exportButton');
+            const clearButton = document.getElementById('clearButton');
+            
+            // Grocery list items array
+            let groceryItems = [];
+            
+            // Filter items based on search
+            searchBox.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                
+                itemCards.forEach(card => {
+                    const itemName = card.getAttribute('data-item').toLowerCase();
+                    if (itemName.includes(searchTerm)) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Filter items by category
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    const category = this.getAttribute('data-category');
+                    
+                    if (category === 'all') {
+                        // Show all items
+                        document.querySelectorAll('.category-section').forEach(section => {
+                            section.style.display = 'block';
+                        });
+                        document.querySelectorAll('.item-card').forEach(card => {
+                            card.style.display = 'block';
+                        });
+                    } else if (category === 'selected') {
+                        // Show only selected items
+                        document.querySelectorAll('.category-section').forEach(section => {
+                            section.style.display = 'none';
+                        });
+                        document.querySelectorAll('.item-card').forEach(card => {
+                            const itemName = card.getAttribute('data-item');
+                            const isSelected = groceryItems.some(item => item.name === itemName);
+                            card.style.display = isSelected ? 'block' : 'none';
+                        });
+                    } else {
+                        // Show specific category
+                        document.querySelectorAll('.category-section').forEach(section => {
+                            section.style.display = 'none';
+                        });
+                        document.getElementById(category).style.display = 'block';
+                    }
+                });
+            });
+            
+            // Handle increment/decrement buttons
+            itemCards.forEach((card, index) => {
+                const incrementBtn = card.querySelector('.increment');
+                const decrementBtn = card.querySelector('.decrement');
+                const quantityDisplay = card.querySelector('.quantity-display');
+                const unitSelect = card.querySelector('.unit-select');
+                const itemName = card.getAttribute('data-item');
+                
+                incrementBtn.addEventListener('click', function() {
+                    let quantity = parseInt(quantityDisplay.textContent);
+                    quantity++;
+                    quantityDisplay.textContent = quantity;
+                    
+                    if (quantity === 1) {
+                        decrementBtn.disabled = false;
+                        card.classList.add('added');
+                        
+                        // Add to grocery list
+                        addToGroceryList(itemName, quantity, unitSelect.value);
+                    } else {
+                        // Update quantity in grocery list
+                        updateGroceryListItem(itemName, quantity, unitSelect.value);
+                    }
+                });
+                
+                decrementBtn.addEventListener('click', function() {
+                    let quantity = parseInt(quantityDisplay.textContent);
+                    quantity--;
+                    quantityDisplay.textContent = quantity;
+                    
+                    if (quantity === 0) {
+                        decrementBtn.disabled = true;
+                        card.classList.remove('added');
+                        
+                        // Remove from grocery list
+                        removeFromGroceryList(itemName);
+                    } else {
+                        // Update quantity in grocery list
+                        updateGroceryListItem(itemName, quantity, unitSelect.value);
+                    }
+                });
+                
+                // Handle unit change
+                unitSelect.addEventListener('change', function() {
+                    const quantity = parseInt(quantityDisplay.textContent);
+                    if (quantity > 0) {
+                        updateGroceryListItem(itemName, quantity, this.value);
+                    }
+                });
+            });
+            
+            // Add custom item
+            addCustomItemBtn.addEventListener('click', function() {
+                const itemName = document.getElementById('customItemName').value.trim();
+                const quantity = parseInt(document.getElementById('customItemQuantity').value);
+                const unit = document.getElementById('customItemUnit').value;
+                
+                if (itemName && quantity > 0) {
+                    addToGroceryList(itemName, quantity, unit, true);
+                    
+                    // Clear the form
+                    document.getElementById('customItemName').value = '';
+                    document.getElementById('customItemQuantity').value = '1';
+                } else {
+                    alert('Please enter a valid item name and quantity');
+                }
+            });
+            
+            // Clear list
+            clearButton.addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear the entire grocery list?')) {
+                    groceryItems = [];
+                    renderGroceryList();
+                    
+                    // Reset all item cards
+                    itemCards.forEach(card => {
+                        const quantityDisplay = card.querySelector('.quantity-display');
+                        const decrementBtn = card.querySelector('.decrement');
+                        
+                        quantityDisplay.textContent = '0';
+                        decrementBtn.disabled = true;
+                        card.classList.remove('added');
+                    });
+                }
+            });
+            
+            // Export to PDF
+            exportButton.addEventListener('click', function() {
+                generatePDF();
+            });
+            
+            // Function to add item to grocery list
+            function addToGroceryList(name, quantity, unit, isCustom = false) {
+                // Check if item already exists
+                const existingItemIndex = groceryItems.findIndex(item => item.name === name);
+                
+                if (existingItemIndex !== -1) {
+                    // Update existing item
+                    groceryItems[existingItemIndex].quantity = quantity;
+                    groceryItems[existingItemIndex].unit = unit;
+                } else {
+                    // Add new item
+                    groceryItems.push({
+                        name,
+                        quantity,
+                        unit,
+                        isCustom
+                    });
+                }
+                
+                renderGroceryList();
+            }
+            
+            // Function to update item in grocery list
+            function updateGroceryListItem(name, quantity, unit) {
+                const itemIndex = groceryItems.findIndex(item => item.name === name);
+                
+                if (itemIndex !== -1) {
+                    groceryItems[itemIndex].quantity = quantity;
+                    groceryItems[itemIndex].unit = unit;
+                    renderGroceryList();
+                }
+            }
+            
+            // Function to remove item from grocery list
+            function removeFromGroceryList(name) {
+                groceryItems = groceryItems.filter(item => item.name !== name);
+                renderGroceryList();
+            }
+            
+            // Function to render grocery list
+            function renderGroceryList() {
+                groceryListItems.innerHTML = '';
+                
+                if (groceryItems.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="5" style="text-align: center;">No items in your grocery list yet</td>';
+                    groceryListItems.appendChild(row);
+                    return;
+                }
+                
+                groceryItems.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    if (item.isCustom) {
+                        row.classList.add('custom-item-row');
+                    }
+                    
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.unit}</td>
+                        <td><button class="delete-btn" data-item="${item.name}">Delete</button></td>
+                    `;
+                    
+                    groceryListItems.appendChild(row);
+                });
+                
+                // Add event listeners to delete buttons
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const itemName = this.getAttribute('data-item');
+                        removeFromGroceryList(itemName);
+                        
+                        // Also reset the corresponding item card if it exists
+                        const itemCard = document.querySelector(`.item-card[data-item="${itemName}"]`);
+                        if (itemCard) {
+                            const quantityDisplay = itemCard.querySelector('.quantity-display');
+                            const decrementBtn = itemCard.querySelector('.decrement');
+                            
+                            quantityDisplay.textContent = '0';
+                            decrementBtn.disabled = true;
+                            itemCard.classList.remove('added');
+                        }
+                    });
+                });
+            }
+            
+            // Function to generate PDF
+            function generatePDF() {
+                if (groceryItems.length === 0) {
+                    alert('Your grocery list is empty. Add some items first.');
+                    return;
+                }
+                
+                const doc = new jsPDF();
+                const currentDate = new Date();
+                const dateString = currentDate.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                const timeString = currentDate.toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                // Add title and date
+                doc.setFontSize(18);
+                doc.text('Chennai Grocery List', 105, 15, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text(`Generated on: ${dateString} at ${timeString}`, 105, 22, { align: 'center' });
+                
+                // Add grocery items
+                let yPosition = 40;
+                let currentCategory = '';
+                
+                // Group items by category for better organization
+                const categorizedItems = {
+                    'Rice & Grains': [],
+                    'Spices & Masalas': [],
+                    'Oils & Ghee': [],
+                    'Vegetables': [],
+                    'Dairy & Others': [],
+                    'Custom Items': []
+                };
+                
+                groceryItems.forEach(item => {
+                    if (item.isCustom) {
+                        categorizedItems['Custom Items'].push(item);
+                        return;
+                    }
+                    
+                    // Determine category for each item
+                    if ([
+                        'Rice - Ponni', 'Rice - Sona Masoori', 'Rice - Basmati', 
+                        'Toor Dal (Arhar)', 'Moong Dal', 'Urad Dal', 
+                        'Chana Dal', 'Masoor Dal', 'Rava/Sooji', 'Wheat Flour (Atta)'
+                    ].includes(item.name)) {
+                        categorizedItems['Rice & Grains'].push(item);
+                    } else if ([
+                        'Turmeric Powder', 'Red Chilli Powder', 'Coriander Powder', 
+                        'Cumin Powder', 'Garam Masala', 'Mustard Seeds', 
+                        'Cumin Seeds', 'Fenugreek Seeds', 'Asafoetida (Hing)', 
+                        'Cardamom', 'Cloves', 'Cinnamon', 'Bay Leaves'
+                    ].includes(item.name)) {
+                        categorizedItems['Spices & Masalas'].push(item);
+                    } else if ([
+                        'Sunflower Oil', 'Coconut Oil', 'Sesame Oil (Gingelly)', 
+                        'Ghee', 'Mustard Oil'
+                    ].includes(item.name)) {
+                        categorizedItems['Oils & Ghee'].push(item);
+                    } else if ([
+                        'Onion', 'Tomato', 'Potato', 'Brinjal', 
+                        'Lady\'s Finger (Okra)', 'Carrot', 'Beans', 
+                        'Cabbage', 'Cauliflower', 'Ginger', 'Garlic', 
+                        'Green Chillies', 'Curry Leaves', 'Coriander Leaves', 
+                        'Drumstick', 'Coconut'
+                    ].includes(item.name)) {
+                        categorizedItems['Vegetables'].push(item);
+                    } else {
+                        categorizedItems['Dairy & Others'].push(item);
+                    }
+                });
+                
+                // Add items to PDF by category
+                for (const category in categorizedItems) {
+                    const items = categorizedItems[category];
+                    
+                    if (items.length > 0) {
+                        // Add category header
+                        doc.setFontSize(14);
+                        doc.setTextColor(211, 84, 0); // Orange color
+                        doc.text(category, 14, yPosition);
+                        yPosition += 10;
+                        
+                        // Add items
+                        doc.setFontSize(12);
+                        doc.setTextColor(0, 0, 0); // Black color
+                        
+                        items.forEach((item, index) => {
+                            const itemText = `${index + 1}. ${item.name} - ${item.quantity} ${item.unit}`;
+                            
+                            // Check if we need a new page
+                            if (yPosition > 270) {
+                                doc.addPage();
+                                yPosition = 20;
+                            }
+                            
+                            doc.text(itemText, 20, yPosition);
+                            yPosition += 10;
+                        });
+                        
+                        yPosition += 5; // Add some space between categories
+                    }
+                }
+                
+                // Save the PDF
+                doc.save(`Grocery_List_${currentDate.getDate()}_${currentDate.getMonth() + 1}_${currentDate.getFullYear()}.pdf`);
+            }
+            
+            // Initialize the grocery list
+            renderGroceryList();
+        });
+    </script>
+</body>
+</html> 
