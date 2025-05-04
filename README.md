@@ -29,9 +29,6 @@ Note: I made this for my mom😁😉
   - Organized by categories
   - Ready to share via WhatsApp/email
 
-- **Responsive Design**:
-  - Works on desktop, tablet and mobile
-
 ## 🚀 How to Use
 
 1. **Browse Items**:
@@ -69,4 +66,4 @@ For development:
 ```bash
 git clone https://github.com/Resultyst/Indian_Grocery_List_Generator.git
 cd Indian_Grocery_List_Generator
-# Open index.html in browser
+# Open grocery.html in browser
