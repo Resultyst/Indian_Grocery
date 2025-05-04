@@ -1,6 +1,8 @@
 # 🛒 Indian Grocery List Generator
 
-A user-friendly web application to create, manage, and export grocery lists with Indian-specific items. Perfect for households to organize their monthly shopping!
+A user-friendly web application to create, manage, and export grocery lists with Indian-specific items. Perfect for Moms to organize their monthly shopping!
+
+Note: I made this for my mom😁😉
 
 ## ✨ Features
 
